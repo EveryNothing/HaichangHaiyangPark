@@ -10,6 +10,8 @@ import requests
 import re
 import json,os,shutil
 from hyper.contrib import HTTP20Adapter
+import time
+import winsound
 
 thecookies={}
 proxies=None
@@ -88,6 +90,7 @@ def cookie2String(cookies):
             ret=ret+"; "
         ret=ret+("%s=%s"%(key,value))
     return ret
+
 #仅限家庭套票
 def subOrder(realName,idcard,mobile,ticketDate):
     #多张家庭套票
@@ -147,21 +150,47 @@ def subOrder(realName,idcard,mobile,ticketDate):
       }
 
     url="https://weixin.haichangchina.com/order/ticket?%s"%paramstr
-    print("request: "+url)
+    #print("request: "+url)
 
     res=requests.post(url,headers=order_headers,data=data,proxies=proxies,verify=False) #cookies=thecookies,
     print(res.text)
     xcookies = requests.utils.dict_from_cookiejar(res.cookies)
     thecookies['Hm_lpvt_30a118fe48f00ddd1f2a68d92e5f7a8f']=(int)(datetime.now().timestamp())
     overwriteCookie(xcookies)
-    print(thecookies)
+    #print(thecookies)
+    try:
+        return res.json()[0]['status']==200
+    except:
+        return False
+
+def notice(freq,duration,count):
+    while count>0:
+        winsound.Beep(freq,duration)
+        count=count-1
+
+def noticeSuccess():
+    notice(600,300,100)
+
+def noticeFail():
+    notice(1600,500,3)
 
 def walk(loginName,loginPass,realName,idcard,mobile,ticketDate):
     logined=login(loginName,loginPass)
     if logined:
-        subOrder(realName,idcard,mobile,ticketDate)
+        print('--------登录成功-----------')
+        while(True):
+            print('---开始下单---')
+            ordered=subOrder(realName,idcard,mobile,ticketDate)
+            if ordered:
+                print('order success')
+                noticeSuccess()
+                break
+            else:
+                print('order failed')
+                time.sleep(3)
     else:
-        print('登录失败')
+        print('-----------登录失败-----------')
+        noticeFail()
 
 loginName = "13777887654" #登录手机号
 loginPass = "123456" #登录密码
@@ -174,7 +203,21 @@ ticketDate = "2022-06-07" #参观日期
 
 #logined=login(loginName,loginPass)
 #print(logined)
-#subOrder(realName,idcard,mobile)
+# logined=False
+# if logined:
+#     print('登录成功')
+#     while(True):
+#         ordered=subOrder(realName,idcard,mobile,ticketDate)
+#         if ordered:
+#             print('order success')
+#             noticeSuccess()
+#             break
+#         else:
+#             print('order failed')
+#             time.sleep(3)
+# else:
+#     print('登录失败')
+#     noticeFail()
 
 #此参数购买一张家庭套票
 walk(loginName,loginPass,realName,idcard,mobile,ticketDate)
